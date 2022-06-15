@@ -331,11 +331,6 @@ while running:
     cv2.imshow("Image", img)
     cv2.waitKey(1)
 
-    enemy_shoot_time -= 1
-    if enemy_shoot_time <= 0:
-        for i in range(enemy_number):
-            enemy[i].shoot()
-        enemy_shoot_time = 100
 
     # 取得玩家輸入
     for event in pygame.event.get():
