@@ -22,9 +22,6 @@ cap.set(4, hCam)
 
 detector = htm.handDetector(maxHands=1)
 wScr, hScr = autopy.screen.size()
-#print(wScr, hScr)
-
-
 
 
 pygame.init()
@@ -280,56 +277,65 @@ enemy_group.add(enemy)
 while running:
     clock.tick(FPS)
 
-    # 1. Find Hand Landmarks
+    # 找到手部座標
     success, img = cap.read()
     img = detector.findHands(img)
     lmList, bbox = detector.findPosition(img)
 
-    # 2. Get the tip of the index and middle fingers
+    # 食指和中指指尖座標
     if len(lmList) != 0:
         x1, y1 = lmList[8][1:]
         x2, y2 = lmList[12][1:]
 
-        # print(x1, x2, y1, y2)
-
-        # 3. Check which fingers are up
+        # 確認哪個手指舉起
         fingers = detector.fingersUp()
-        # print(fingers)
-        cv2.rectangle(img, (frameR, frameR), (wCam - frameR, hCam - frameR), (255, 0, 0), 2)
-        # 4. Only Index Finger : Moving Mode
-        if fingers[1] == 1 and fingers[2] == 0:
-            # 5. Convert Coordinates
 
+        cv2.rectangle(img, (frameR, frameR), (wCam - frameR, hCam - frameR), (255, 0, 0), 2)
+
+        # 只有食指舉起就可以移動
+        if fingers[1] == 1 and fingers[2] == 0:
+
+            # 轉換座標
             x3 = np.interp(x1, (frameR, wCam - frameR), (0, wScr))
             y3 = np.interp(y1, (frameR, hCam - frameR), (0, hScr))
 
-            # 6. Smooth Values
+            # 平滑值
             clocX = plocX + (x3 - plocX) / smoothening
             clocY = plocY + (y3 - plocY) / smoothening
-            # 7. Move Mouse
+
+            # 移動滑鼠
             autopy.mouse.move(wScr - clocX, clocY)
             cv2.circle(img, (x1, y1), 15, (255, 0, 0), cv2.FILLED)
             plocX, plocY = clocX, clocY
 
-        # 8. Both Index and middle fingers are up : Clicking Mode
+        # 食指中指都舉起來進入可點擊模式
         if fingers[1] == 1 and fingers[2] == 1:
-            # 9. Find distance between fingers
+
+            # 找到兩指間的距離
             length, img, lineInfo = detector.findDistance(8, 12, img)
             print(length)
-            # 10. Click Mouse if distance short
+
+            # 兩指間距離小於30就進行點擊
             if length < 30:
                 cv2.circle(img, (lineInfo[4], lineInfo[5]), 15, (0, 255, 0), cv2.FILLED)
                 autopy.mouse.click()
 
-    # 11. Frame Rate
+    # 幀率
     cTime = time.time()
     fps = 1 / (cTime - pTime)
     pTime = cTime
 
     cv2.putText(img, str(int(fps)), (10, 50), cv2.FONT_HERSHEY_PLAIN, 3, (255, 0, 255), 3)
-    # 12. Display
+
+    # 最後呈現
     cv2.imshow("Image", img)
     cv2.waitKey(1)
+
+    enemy_shoot_time -= 1
+    if enemy_shoot_time <= 0:
+        for i in range(enemy_number):
+            enemy[i].shoot()
+        enemy_shoot_time = 100
 
     # 取得玩家輸入
     for event in pygame.event.get():
